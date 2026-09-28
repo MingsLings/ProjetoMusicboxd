@@ -9,7 +9,7 @@ import {
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { auth } from '../services/firebase';
 
-interface AuthContextValue {
+interface AuthState {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -17,25 +17,37 @@ interface AuthContextValue {
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => onAuthStateChanged(auth, (nextUser) => {
-    setUser(nextUser);
-    setLoading(false);
-  }), []);
+  useEffect(() => {
+    const stopListening = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
 
-  const signIn = (email: string, password: string) => signInWithEmailAndPassword(auth, email.trim(), password).then(() => undefined);
+    return stopListening;
+  }, []);
 
-  const signUp = async (name: string, email: string, password: string) => {
-    const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-    await updateProfile(credential.user, { displayName: name.trim() });
-  };
+  async function signIn(email: string, password: string) {
+    await signInWithEmailAndPassword(auth, email.trim(), password);
+  }
 
-  const logout = () => signOut(auth);
+  async function signUp(name: string, email: string, password: string) {
+    const account = await createUserWithEmailAndPassword(auth, email.trim(), password);
+    const displayName = name.trim();
+
+    if (displayName) {
+      await updateProfile(account.user, { displayName });
+    }
+  }
+
+  async function logout() {
+    await signOut(auth);
+  }
 
   return <AuthContext.Provider value={{ user, loading, signIn, signUp, logout }}>{children}</AuthContext.Provider>;
 }
@@ -43,14 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const value = useContext(AuthContext);
   if (!value) {
-    throw new Error('useAuth deve ser usado dentro de AuthProvider.');
+    throw new Error('useAuth requer um AuthProvider ativo.');
   }
   return value;
 }
 
 export function getAuthErrorMessage(error: unknown) {
-  const code = (error as { code?: string })?.code;
-  const messages: Record<string, string> = {
+  const errorCode = (error as { code?: string })?.code ?? '';
+  const messagesByCode: Record<string, string> = {
     'auth/invalid-email': 'Informe um e-mail válido.',
     'auth/invalid-credential': 'E-mail ou senha incorretos.',
     'auth/wrong-password': 'Senha incorreta.',
@@ -58,5 +70,6 @@ export function getAuthErrorMessage(error: unknown) {
     'auth/email-already-in-use': 'Este e-mail já está cadastrado.',
     'auth/weak-password': 'A senha deve ter pelo menos 6 caracteres.',
   };
-  return messages[code ?? ''] ?? 'Não foi possível concluir a operação. Tente novamente.';
+
+  return messagesByCode[errorCode] ?? 'Não foi possível concluir a operação. Tente novamente.';
 }
