@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Musicboxd",
+    "slug": "musicboxd",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.musicboxd",
+      "adaptiveIcon": {
+        "backgroundColor": "#1DB954",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": []
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "@react-native-community/datetimepicker"
+    ],
+    "scheme": "musicboxd",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "01860f8e-ceb6-485b-a411-af44d59b5932"
+      }
+    }
+  }
+}
